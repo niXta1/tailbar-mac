@@ -13,10 +13,10 @@ Built for Apple Silicon and macOS 15 or later.
 
 > [!IMPORTANT]
 > Tailbar is independent of Tailscale, INCY, and Happ. It does not ship
-> a VPN engine, a VLESS/Trojan client, or Tailscale credentials. It controls a
-> separately installed Homebrew `tailscaled` through
-> `/var/run/tailscaled.socket`. The official Tailscale macOS app is a different
-> client and is not controlled by this interface.
+> a VPN engine, a VLESS/Trojan/Tailscale client, or any credentials. It controls
+> your Homebrew installed `tailscaled`. The Tailscale macOS app is different
+> from tailscaled CLI, and is not controlled by this interface. Actually, Tailbar
+> recreates the macOS GUI to the tailscaled CLI-version.
 
 [Русская версия](docs/README.ru.md) · [Installation](docs/INSTALL.md) ·
 [Networking and limitations](docs/NETWORKING.md) · [Changelog](CHANGELOG.md)
@@ -70,11 +70,11 @@ Upgrading from **Tailnet Bridge 0.5** (`TailscaleMenuBar.app`)? Remove the old
 app and turn **Launch at login** on again; see
 [Upgrading from 0.5](docs/INSTALL.md#upgrading-from-05-tailnet-bridge--tailscalemenubarapp).
 
-The binary is **ad-hoc signed, not Apple-notarized**. macOS may
+The binary is not Apple-notarized, but signed. macOS may
 require the [Open Anyway flow](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac).
 Check the published SHA-256 file before opening the download. See the
 [full installation guide](docs/INSTALL.md) for verification, source builds,
-service setup, and uninstall instructions.
+service setup, and uninstall instructions. If unsure, let an AI-agent scan the project.
 
 ## How the pieces fit
 
