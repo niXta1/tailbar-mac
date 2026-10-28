@@ -206,11 +206,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var refreshing = false
     var previousBackendState: String?
     var previousExitNodeID: String?
-    var proxyStatus = "Проверяем…"
+    var proxyStatus = "Checking…"
     var clientTransport = ClientTransportStatus()
     var transportDot: TransportDotView?
     var workspaceObservers: [NSObjectProtocol] = []
-    var routeStatus = "Маршрут ещё не проверен"
+    var routeStatus = "Route not checked yet"
     var dashboard: DashboardController?
     var eventProcess: Process?
     var eventPipe: Pipe?
@@ -303,7 +303,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let prefs = fetchPrefs()
             let profiles = fetchProfiles()
             let port = [10808, 10809, 10820].first { self.isPortOpen($0) }
-            let proxy = port.map { "\($0 == 10808 ? "INCY" : "Happ") · 127.0.0.1:\($0)" } ?? "не обнаружен"
+            let proxy = port.map { "\($0 == 10808 ? "INCY" : "Happ") · 127.0.0.1:\($0)" } ?? "not detected"
             let route = self.readRouteStatus(status)
             DispatchQueue.main.async {
                 if self.stateRevision != revision {
@@ -829,7 +829,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // every Connect/Log in doesn't quietly drop subnet routing etc.
             let (output, code) = runTailscale(["up", "--reset"])
             if code != 0 {
-                let hint = detectedPort == nil ? "\n\nПопытка без локального прокси не удалась. Если сеть блокирует Tailscale, запустите INCY или Happ и повторите подключение." : ""
+                let hint = detectedPort == nil ? "\n\nConnecting without a local proxy failed. If your network blocks Tailscale, start INCY or Happ and connect again." : ""
                 DispatchQueue.main.async { self.showConnectError(output + hint) }
             } else {
                 restorePrefsAfterReset(prefsBefore, exitNodeTarget: exitNodeTargetBefore)

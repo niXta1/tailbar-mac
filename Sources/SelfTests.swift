@@ -43,10 +43,10 @@ func runInterfaceSelfTests() {
     toggle.state = .on
     check(toggle.state == .on, "switch exposes its actual checked state")
     let direct = ClientTransportStatus(checked: true)
-    check(direct.modeLine.contains("без локального прокси"), "no proxy allows automatic direct mode")
+    check(direct.modeLine.contains("no local proxy"), "no proxy allows automatic direct mode")
     check(direct.indicator == .none, "no client or proxy leaves native status icon unchanged")
     let appOnly = ClientTransportStatus(runningClients: ["INCY"], checked: true)
-    check(appOnly.clientLine.contains("запущен") && appOnly.proxyPort == nil, "running client is distinct from an available proxy")
+    check(appOnly.clientLine == "INCY running" && appOnly.proxyPort == nil, "running client is distinct from an available proxy")
     check(appOnly.indicator == .clientOnly, "running client gets amber status dot")
     let proxyOnly = ClientTransportStatus(proxyPort: 10808, checked: true)
     check(proxyOnly.modeLine.contains(":10808") && proxyOnly.runningClients.isEmpty, "background listener does not imply running GUI")

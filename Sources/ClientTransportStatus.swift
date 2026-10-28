@@ -18,13 +18,13 @@ struct ClientTransportStatus {
         }
     }
     var clientLine: String {
-        guard checked else { return "Проверяем INCY / Happ…" }
-        guard !runningClients.isEmpty else { return "INCY / Happ не запущены" }
-        return runningClients.joined(separator: " + ") + (runningClients.count == 1 ? " запущен" : " запущены")
+        guard checked else { return "Checking INCY / Happ…" }
+        guard !runningClients.isEmpty else { return "INCY / Happ not running" }
+        return runningClients.joined(separator: " + ") + " running"
     }
     var modeLine: String {
-        guard checked else { return "Автоматический выбор подключения" }
-        return proxyPort.map { "Авто · локальный прокси :\($0)" } ?? "Авто · без локального прокси"
+        guard checked else { return "Automatic connection mode" }
+        return proxyPort.map { "Auto · local proxy :\($0)" } ?? "Auto · no local proxy"
     }
     var indicator: TransportIndicator {
         guard checked else { return .none }
@@ -41,8 +41,8 @@ struct ClientTransportStatus {
     }
     var explanation: String {
         if let port = proxyPort {
-            return "TCP-порт 127.0.0.1:\(port) доступен. Wrapper предпочитает этот локальный прокси. Проверка порта не подтверждает CONNECT, авторизацию или доступность интернета."
+            return "TCP port 127.0.0.1:\(port) is open. The wrapper prefers this local proxy. A port check does not confirm CONNECT support, authentication or internet access."
         }
-        return "Локальный прокси не обнаружен. Подключение разрешено без него. Это не гарантирует обход других системных VPN/TUN. Если сеть блокирует Tailscale, запустите INCY или Happ."
+        return "No local proxy detected. Connecting without one is allowed. This does not guarantee that other system VPN/TUN interfaces are bypassed. If your network blocks Tailscale, start INCY or Happ."
     }
 }

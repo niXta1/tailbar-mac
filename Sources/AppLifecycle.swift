@@ -184,7 +184,7 @@ extension AppDelegate {
     /// Local route lookup, not a reachability test and not a public-IP request.
     func readRouteStatus(_ status: TSStatus?) -> String {
         guard status?.backendState == "Running", status?.exitNodeStatus?.ID != nil else {
-            return "Выход через exit node не активен"
+            return "No exit node in use"
         }
         func output(_ path: String, _ arguments: [String]) -> String {
             let process = Process()
@@ -202,7 +202,7 @@ extension AppDelegate {
         guard let line = route.split(separator: "\n").first(where: { $0.contains("interface:") }),
               let iface = line.split(separator: ":").last?.trimmingCharacters(in: .whitespaces),
               iface.hasPrefix("utun") else {
-            return "⚠ Exit node выбран, но проверочный IPv4-маршрут не идёт в Tailscale"
+            return "⚠ Exit node selected, but the test IPv4 route does not go through Tailscale"
         }
         let addresses = status?.selfNode?.TailscaleIPs ?? []
         let config = output("/sbin/ifconfig", [iface])
@@ -210,6 +210,6 @@ extension AppDelegate {
             let fields = line.split(whereSeparator: { $0.isWhitespace })
             return fields.count > 1 && fields[0] == "inet" && addresses.contains(String(fields[1]))
         }
-        return matches ? "IPv4-маршрут → Tailscale (\(iface)) · доступность не проверялась" : "⚠ Проверочный IPv4-маршрут идёт в другой VPN (\(iface))"
+        return matches ? "IPv4 route → Tailscale (\(iface)) · reachability not tested" : "⚠ Test IPv4 route goes through another VPN (\(iface))"
     }
 }
