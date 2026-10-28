@@ -17,6 +17,17 @@ codesign --verify --deep --strict Tailbar.app
 Self-tests do not connect to a tailnet or modify VPN settings. Test network
 changes separately on a machine where temporary loss of connectivity is safe.
 
+## Translations
+
+English is the development language. Write user-facing text in English and
+pass it through `L("…")`, or `L(format: "…", value)` when it contains values;
+the English text is the key. Add the translation to
+`Resources/ru.lproj/Localizable.strings` with the same `%@`, `%ld` and `%d`
+specifiers in the same order. A key without a translation is shown in English,
+and `--self-test` checks the specifiers of every bundled translation. A new
+language needs `Resources/<code>.lproj/Localizable.strings` and its code in
+`CFBundleLocalizations` in `Resources/Info.plist`.
+
 ## Privacy before submitting
 
 Do not include real account names, tailnet names, device IDs, auth URLs,

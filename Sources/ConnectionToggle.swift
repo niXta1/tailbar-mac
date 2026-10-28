@@ -14,7 +14,7 @@ final class ConnectionToggle: NSButton {
         title = ""
         isBordered = false
         focusRingType = .exterior
-        setAccessibilityLabel("Tailscale connection")
+        setAccessibilityLabel(L("Tailscale connection"))
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override var state: NSControl.StateValue { didSet { needsDisplay = true } }

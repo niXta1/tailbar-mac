@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- English is the base language for all interface text. A few status lines,
+  tooltips and an error hint were hard-coded in Russian; they are English now.
+- Russian translation of the whole interface, used when Russian is the
+  preferred language in macOS. Other languages fall back to English.
+
 ## 0.6.0 — sleep and network recovery
 
 - Renamed to **Tailbar** (`Tailbar.app`, identifier `app.tailbar.menubar`,
