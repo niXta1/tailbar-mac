@@ -642,50 +642,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return submenu
     }
 
-    func buildPreferencesMenu() -> NSMenu {
-        let submenu = NSMenu()
-
-        let acceptRoutes = NSMenuItem(title: "Use Tailscale subnets", action: #selector(togglePref(_:)), keyEquivalent: "")
-        acceptRoutes.target = self
-        acceptRoutes.representedObject = "accept-routes"
-        acceptRoutes.state = (currentPrefs?.RouteAll == true) ? .on : .off
-        submenu.addItem(acceptRoutes)
-
-        let acceptDNS = NSMenuItem(title: "Use Tailscale DNS", action: #selector(togglePref(_:)), keyEquivalent: "")
-        acceptDNS.target = self
-        acceptDNS.representedObject = "accept-dns"
-        acceptDNS.state = (currentPrefs?.CorpDNS == true) ? .on : .off
-        submenu.addItem(acceptDNS)
-
-        let allowIncoming = NSMenuItem(title: "Allow incoming connections", action: #selector(togglePref(_:)), keyEquivalent: "")
-        allowIncoming.target = self
-        allowIncoming.representedObject = "allow-incoming"
-        allowIncoming.state = (currentPrefs?.ShieldsUp == false) ? .on : .off
-        submenu.addItem(allowIncoming)
-
-        submenu.addItem(NSMenuItem.separator())
-
-        let launchAtLogin = NSMenuItem(title: "Launch at login", action: #selector(toggleLaunchAtLogin(_:)), keyEquivalent: "")
-        launchAtLogin.target = self
-        launchAtLogin.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
-        submenu.addItem(launchAtLogin)
-
-        submenu.addItem(NSMenuItem.separator())
-
-        let happItem = NSMenuItem(title: "Local proxy: \(proxyStatus)", action: nil, keyEquivalent: "")
-        happItem.isEnabled = false
-        submenu.addItem(happItem)
-
-        return submenu
-    }
-
-    func happProxyStatusText() -> String {
-        for port in [10808, 10809, 10820] where isPortOpen(port) {
-            return "detected on :\(port)"
-        }
-        return "not detected (direct)"
-    }
-
     func isPortOpen(_ port: Int) -> Bool {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/nc")
@@ -787,7 +743,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // Shared by the Connect toggle and the explicit Log in… item. Guards
+    // Shared by the Connect toggles, which also sign in when needed. Guards
     // against firing a second `tailscale up --reset` while one is already
     // in flight: each `up` call cancels any previous one still waiting on
     // browser auth (surfaces as "context canceled" / a fresh AuthURL each
@@ -821,7 +777,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // bare "up" fails with "requires mentioning all non-default
             // flags" whenever persisted prefs (accept-routes, exit-node
             // LAN access, ...) differ from tailscale's own defaults —
-            // which they usually do, since Preferences/exit-node menu
+            // which they usually do, since Settings and the exit-node menu
             // set them via `tailscale set`. --reset sidesteps that instead
             // of silently failing, but it also resets those prefs to
             // tailscale's own defaults (accept-routes off, accept-dns on,
@@ -896,10 +852,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc func logIn(_ sender: NSMenuItem) {
-        startConnectOrLogin()
-    }
-
     @objc func copyToClipboard(_ sender: NSMenuItem) {
         guard let text = sender.representedObject as? String else { return }
         let pb = NSPasteboard.general
@@ -949,34 +901,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // The watchdog daemon repairs a missing default route within ~5s (the
-    // known exit-node-teardown bug), but the app can surface it immediately
-    // instead of leaving the user staring at a silently broken connection.
-    func verifyRouteAfterExitNodeChange() {
-        Thread.sleep(forTimeInterval: 1.5)
-        let hasRoute = checkDefaultRouteExists()
-        if !hasRoute {
-            postNotification(title: "Repairing network route", body: "Default route was dropped after the exit-node change — the watchdog is restoring it.")
-        }
-    }
-
-    func checkDefaultRouteExists() -> Bool {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/netstat")
-        process.arguments = ["-rn", "-f", "inet"]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        do {
-            try process.run()
-        } catch {
-            return true
-        }
-        process.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output = String(data: data, encoding: .utf8) ?? ""
-        return output.split(separator: "\n").contains { $0.split(whereSeparator: { $0.isWhitespace }).first == "default" }
-    }
-
     @objc func togglePref(_ sender: NSMenuItem) {
         guard let key = sender.representedObject as? String else { return }
         let prefs = currentPrefs
@@ -1010,15 +934,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // reflect whatever the actual status ends up being on next refresh
         }
         refresh()
-    }
-
-    @objc func showHealthWarnings(_ sender: NSMenuItem) {
-        guard let text = sender.representedObject as? String else { return }
-        let alert = NSAlert()
-        alert.messageText = "Tailscale health warnings"
-        alert.informativeText = text
-        alert.alertStyle = .warning
-        alert.runModal()
     }
 
     @objc func sendFileToPeer(_ sender: NSMenuItem) {
