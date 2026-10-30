@@ -21,7 +21,7 @@ final class MenuConnectionHeader: NSView {
         toggle.frame = NSRect(x: 310, y: 8, width: 54, height: 24)
         toggle.state = connected ? .on : .off
         toggle.isEnabled = enabled
-        toggle.setAccessibilityLabel("Tailscale connection")
+        toggle.setAccessibilityLabel(L("Tailscale connection"))
         toggle.target = self
         toggle.action = #selector(change)
         toggle.autoresizingMask = [.minXMargin]

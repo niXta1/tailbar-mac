@@ -43,10 +43,10 @@ func runInterfaceSelfTests() {
     toggle.state = .on
     check(toggle.state == .on, "switch exposes its actual checked state")
     let direct = ClientTransportStatus(checked: true)
-    check(direct.modeLine.contains("без локального прокси"), "no proxy allows automatic direct mode")
+    check(direct.modeLine == L("Auto · no local proxy"), "no proxy allows automatic direct mode")
     check(direct.indicator == .none, "no client or proxy leaves native status icon unchanged")
     let appOnly = ClientTransportStatus(runningClients: ["INCY"], checked: true)
-    check(appOnly.clientLine.contains("запущен") && appOnly.proxyPort == nil, "running client is distinct from an available proxy")
+    check(appOnly.clientLine == L(format: "%@ running", "INCY") && appOnly.proxyPort == nil, "running client is distinct from an available proxy")
     check(appOnly.indicator == .clientOnly, "running client gets amber status dot")
     let proxyOnly = ClientTransportStatus(proxyPort: 10808, checked: true)
     check(proxyOnly.modeLine.contains(":10808") && proxyOnly.runningClients.isEmpty, "background listener does not imply running GUI")
@@ -94,5 +94,18 @@ func runInterfaceSelfTests() {
     let exitOnly = "Destination        Gateway            Flags               Netif Expire\n0/1                utun5              USc                 utun5\ndefault            192.0.2.1          UGScIg                en0\n128.0/1            utun5              USc                 utun5\n"
     check(diagnoseNetwork(netstat: exitOnly, ifconfig: incyIfconfig, dns: "", tailscaleState: "Running").isEmpty,
           "live /1 halves stand in for a default route")
+    check(Bundle.main.developmentLocalization == "en", "English is the development language")
+    check(Set(Bundle.main.localizations).isSuperset(of: ["en", "ru"]), "English and Russian localizations are bundled")
+    // A translation that drops or reorders %@, %ld or %d makes String(format:) misread its arguments.
+    let specifier = try! NSRegularExpression(pattern: "%(ld|d|@)")
+    func specifiers(_ text: String) -> [String] {
+        specifier.matches(in: text, range: NSRange(text.startIndex..., in: text)).map { (text as NSString).substring(with: $0.range) }
+    }
+    for language in Bundle.main.localizations where language != "en" {
+        let url = Bundle.main.url(forResource: "Localizable", withExtension: "strings", subdirectory: nil, localization: language)
+        let table = url.flatMap { try? String(contentsOf: $0, encoding: .utf8) }?.propertyListFromStringsFileFormat() ?? [:]
+        check(!table.isEmpty, "\(language) translation loads")
+        check(table.allSatisfy { specifiers($0.key) == specifiers($0.value) }, "\(language) translation keeps format specifiers")
+    }
     print("Self-tests do not start the app UI, access the daemon, or modify VPN settings.")
 }

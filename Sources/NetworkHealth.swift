@@ -22,12 +22,12 @@ enum NetworkProblem: Equatable {
 
     var summary: String {
         switch self {
-        case .noPrimaryRoute: return "Wi-Fi is up but there is no default route"
-        case .deadTunnelRoute(let iface): return "Traffic is routed into a dead tunnel (\(iface))"
-        case .staleClientDNS: return "DNS still points at INCY / Happ, which is not running"
-        case .staleTailscaleDNS: return "DNS still points at Tailscale, which is stopped"
-        case .exitNodeUnreachable: return "The exit node does not answer"
-        case .noInternet: return "No internet although Wi-Fi is up"
+        case .noPrimaryRoute: return L("Wi-Fi is up but there is no default route")
+        case .deadTunnelRoute(let iface): return L(format: "Traffic is routed into a dead tunnel (%@)", iface)
+        case .staleClientDNS: return L("DNS still points at INCY / Happ, which is not running")
+        case .staleTailscaleDNS: return L("DNS still points at Tailscale, which is stopped")
+        case .exitNodeUnreachable: return L("The exit node does not answer")
+        case .noInternet: return L("No internet although Wi-Fi is up")
         }
     }
 }
@@ -39,9 +39,9 @@ struct NetworkHealthReport {
     var probed = false
 
     var line: String {
-        guard checked else { return "Network not checked yet" }
-        guard uplink else { return "No Wi-Fi / Ethernet connection" }
-        return problems.isEmpty ? "Network OK" : "⚠ " + problems.map(\.summary).joined(separator: "; ")
+        guard checked else { return L("Network not checked yet") }
+        guard uplink else { return L("No Wi-Fi / Ethernet connection") }
+        return problems.isEmpty ? L("Network OK") : "⚠ " + problems.map(\.summary).joined(separator: "; ")
     }
 }
 
@@ -229,8 +229,8 @@ extension AppDelegate {
         guard autoRepairAttempts < 2 else {
             if !repairGaveUpNotified {
                 repairGaveUpNotified = true
-                postNotification(title: "Network still broken",
-                                 body: report.problems.map(\.summary).joined(separator: "\n") + "\nAutomatic repair stopped. Check INCY / Happ and the exit node, then use Repair Network.")
+                postNotification(title: L("Network still broken"),
+                                 body: report.problems.map(\.summary).joined(separator: "\n") + "\n" + L("Automatic repair stopped. Check INCY / Happ and the exit node, then use Repair Network."))
             }
             return
         }
@@ -276,7 +276,7 @@ extension AppDelegate {
                 DispatchQueue.main.async {
                     self.repairingNetwork = false
                     self.commandInProgress = false
-                    self.postNotification(title: "Waiting for Wi-Fi", body: "Wi-Fi was restarted but has not reconnected. Join your network; Tailscale will follow.")
+                    self.postNotification(title: L("Waiting for Wi-Fi"), body: L("Wi-Fi was restarted but has not reconnected. Join your network; Tailscale will follow."))
                     if let snapshot = snapshot {
                         self.pendingReconnect = snapshot
                         self.recoverAfterWake()
@@ -304,19 +304,19 @@ extension AppDelegate {
                 if after.problems.isEmpty {
                     self.problemSince = nil
                     self.autoRepairAttempts = 0
-                    var body = cycled ? "Wi-Fi restarted" : "Wi-Fi could not be restarted by the app"
+                    var body = cycled ? L("Wi-Fi restarted") : L("Wi-Fi could not be restarted by the app")
                     if let restored = restored {
-                        body += restored.ok ? "; Tailscale reconnected" : "; Tailscale did not come back: " + restored.outcome.trimmingCharacters(in: .whitespacesAndNewlines)
+                        body += "; " + (restored.ok ? L("Tailscale reconnected") : L(format: "Tailscale did not come back: %@", restored.outcome.trimmingCharacters(in: .whitespacesAndNewlines)))
                     }
-                    self.postNotification(title: "Network repaired", body: body)
+                    self.postNotification(title: L("Network repaired"), body: body)
                 } else if !automatic || self.autoRepairAttempts >= 2 {
                     self.repairGaveUpNotified = true
                     var body = after.problems.map(\.summary).joined(separator: "\n")
-                    if !cycled { body += "\nThe app could not restart Wi-Fi; turn it off and on in Control Center." }
+                    if !cycled { body += "\n" + L("The app could not restart Wi-Fi; turn it off and on in Control Center.") }
                     if problems.contains(.staleClientDNS) || after.problems.contains(.staleClientDNS) {
-                        body += "\nIf INCY / Happ was force-quit, start it and quit it normally."
+                        body += "\n" + L("If INCY / Happ was force-quit, start it and quit it normally.")
                     }
-                    self.postNotification(title: "Network still broken", body: body)
+                    self.postNotification(title: L("Network still broken"), body: body)
                 }
                 self.updateDashboard()
                 self.refresh()

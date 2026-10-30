@@ -12,7 +12,7 @@ jobs:
       - name: Validate scripts and launchd examples
         run: |
           bash -n build.sh install.sh tailscaled-wrapper.sh tailscale-watchdog.sh diagnose-network.sh
-          plutil -lint Resources/Info.plist launchd/*.plist
+          plutil -lint Resources/Info.plist launchd/*.plist Resources/*.lproj/*.strings
       - name: Build and verify app
         run: |
           ./build.sh

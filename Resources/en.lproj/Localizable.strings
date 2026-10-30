@@ -1,0 +1,3 @@
+/* English is the development language: keys are the English text and need
+   no entries here. This table exists so macOS lists English as a
+   localization and falls back to it for languages Tailbar does not have. */

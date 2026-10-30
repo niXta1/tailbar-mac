@@ -302,7 +302,7 @@ extension AppDelegate {
     /// more on failure. Background thread only.
     func restoreTailscale(_ snapshot: ReconnectSnapshot) -> (ok: Bool, outcome: String) {
         if fetchStatus()?.backendState == "NeedsLogin" {
-            return (false, "Tailscale needs login. Open Tailbar to sign in.")
+            return (false, L("Tailscale needs login. Open Tailbar to sign in."))
         }
         var outcome = ""
         for attempt in 0..<2 {
@@ -321,11 +321,11 @@ extension AppDelegate {
 
     func notifyReconnectOutcome(_ result: (ok: Bool, outcome: String), snapshot: ReconnectSnapshot) {
         if result.ok {
-            postNotification(title: "Tailscale reconnected", body: snapshot.exitNodeTarget == nil ? nil : "Exit node restored")
+            postNotification(title: L("Tailscale reconnected"), body: snapshot.exitNodeTarget == nil ? nil : L("Exit node restored"))
         } else {
             let detail = result.outcome.trimmingCharacters(in: .whitespacesAndNewlines)
-            postNotification(title: "Couldn't reconnect Tailscale",
-                             body: (detail.isEmpty ? "" : detail + "\n") + "Check INCY / Happ, then use Repair Network.")
+            postNotification(title: L("Couldn't reconnect Tailscale"),
+                             body: (detail.isEmpty ? "" : detail + "\n") + L("Check INCY / Happ, then use Repair Network."))
         }
     }
 

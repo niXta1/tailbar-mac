@@ -47,6 +47,9 @@ Built for Apple Silicon and macOS 15 or later.
   when those listeners disappear.
 - An optional route helper for a specific **INCY TUN + Tailscale exit node**
   setup. It is not installed by the app and is IPv4-only.
+- An English interface with a Russian translation. Tailbar is in Russian when
+  Russian is first in your preferred languages or is chosen for Tailbar under
+  System Settings → General → Language & Region → Applications.
 
 The top-left dot checks only a listener's TCP port. It does **not** verify
 proxy auth, CONNECT behavior, internet access, DNS privacy, or the route to an

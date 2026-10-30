@@ -6,33 +6,33 @@ extension AppDelegate {
         let application = NSMenuItem()
         let menu = NSMenu()
         for (title, action, key) in [
-            ("Open Tailbar", #selector(showDashboard(_:)), "0"),
-            ("Settings…", #selector(showSettingsWindow(_:)), ","),
-            ("Hide Tailbar", #selector(NSApplication.hide(_:)), "h"),
-            ("Quit", #selector(quitApp(_:)), "q")
+            (L("Open Tailbar"), #selector(showDashboard(_:)), "0"),
+            (L("Settings…"), #selector(showSettingsWindow(_:)), ","),
+            (L("Hide Tailbar"), #selector(NSApplication.hide(_:)), "h"),
+            (L("Quit"), #selector(quitApp(_:)), "q")
         ] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
             item.target = action == #selector(NSApplication.hide(_:)) ? NSApp : self
             menu.addItem(item)
         }
         application.submenu = menu
-        let statusMenu = NSMenuItem(title: "Open Menu Bar", action: #selector(showStatusMenu(_:)), keyEquivalent: "m")
+        let statusMenu = NSMenuItem(title: L("Open Menu Bar"), action: #selector(showStatusMenu(_:)), keyEquivalent: "m")
         statusMenu.keyEquivalentModifierMask = [.command, .shift]
         statusMenu.target = self
         menu.insertItem(statusMenu, at: 1)
         main.addItem(application)
         let editItem = NSMenuItem()
-        let editMenu = NSMenu(title: "Edit")
-        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editMenu = NSMenu(title: L("Edit"))
+        editMenu.addItem(withTitle: L("Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: L("Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: L("Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: L("Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = editMenu
         main.addItem(editItem)
         let windowItem = NSMenuItem()
-        let windowMenu = NSMenu(title: "Window")
-        windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
-        windowMenu.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let windowMenu = NSMenu(title: L("Window"))
+        windowMenu.addItem(withTitle: L("Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: L("Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         windowItem.submenu = windowMenu
         main.addItem(windowItem)
         NSApp.mainMenu = main
@@ -184,7 +184,7 @@ extension AppDelegate {
     /// Local route lookup, not a reachability test and not a public-IP request.
     func readRouteStatus(_ status: TSStatus?) -> String {
         guard status?.backendState == "Running", status?.exitNodeStatus?.ID != nil else {
-            return "Выход через exit node не активен"
+            return L("No exit node in use")
         }
         func output(_ path: String, _ arguments: [String]) -> String {
             let process = Process()
@@ -202,7 +202,7 @@ extension AppDelegate {
         guard let line = route.split(separator: "\n").first(where: { $0.contains("interface:") }),
               let iface = line.split(separator: ":").last?.trimmingCharacters(in: .whitespaces),
               iface.hasPrefix("utun") else {
-            return "⚠ Exit node выбран, но проверочный IPv4-маршрут не идёт в Tailscale"
+            return L("⚠ Exit node selected, but the test IPv4 route does not go through Tailscale")
         }
         let addresses = status?.selfNode?.TailscaleIPs ?? []
         let config = output("/sbin/ifconfig", [iface])
@@ -210,6 +210,6 @@ extension AppDelegate {
             let fields = line.split(whereSeparator: { $0.isWhitespace })
             return fields.count > 1 && fields[0] == "inet" && addresses.contains(String(fields[1]))
         }
-        return matches ? "IPv4-маршрут → Tailscale (\(iface)) · доступность не проверялась" : "⚠ Проверочный IPv4-маршрут идёт в другой VPN (\(iface))"
+        return matches ? L(format: "IPv4 route → Tailscale (%@) · reachability not tested", iface) : L(format: "⚠ Test IPv4 route goes through another VPN (%@)", iface)
     }
 }

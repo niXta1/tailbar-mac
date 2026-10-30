@@ -20,6 +20,8 @@ swiftc -O -target arm64-apple-macosx15.0 \
 
 cp Resources/Info.plist "$BUILD_DIR/Contents/Info.plist"
 cp Resources/AppIcon.icns "$BUILD_DIR/Contents/Resources/AppIcon.icns"
+# English is the development language; other .lproj folders hold translations.
+cp -R Resources/*.lproj "$BUILD_DIR/Contents/Resources/"
 cp LICENSE THIRD_PARTY_NOTICES.md "$BUILD_DIR/Contents/Resources/"
 
 echo "Signing..."

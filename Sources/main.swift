@@ -189,10 +189,10 @@ func relativeLastSeen(_ iso: String?) -> String {
     }
     guard let date = date else { return "" }
     let interval = -date.timeIntervalSinceNow
-    if interval < 60 { return "seen just now" }
-    if interval < 3600 { return "seen \(Int(interval / 60))m ago" }
-    if interval < 86400 { return "seen \(Int(interval / 3600))h ago" }
-    return "seen \(Int(interval / 86400))d ago"
+    if interval < 60 { return L("seen just now") }
+    if interval < 3600 { return L(format: "seen %ldm ago", Int(interval / 60)) }
+    if interval < 86400 { return L(format: "seen %ldh ago", Int(interval / 3600)) }
+    return L(format: "seen %ldd ago", Int(interval / 86400))
 }
 
 // MARK: - app delegate
@@ -206,11 +206,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var refreshing = false
     var previousBackendState: String?
     var previousExitNodeID: String?
-    var proxyStatus = "Проверяем…"
+    var proxyStatus = L("Checking…")
     var clientTransport = ClientTransportStatus()
     var transportDot: TransportDotView?
     var workspaceObservers: [NSObjectProtocol] = []
-    var routeStatus = "Маршрут ещё не проверен"
+    var routeStatus = L("Route not checked yet")
     var dashboard: DashboardController?
     var eventProcess: Process?
     var eventPipe: Pipe?
@@ -303,7 +303,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let prefs = fetchPrefs()
             let profiles = fetchProfiles()
             let port = [10808, 10809, 10820].first { self.isPortOpen($0) }
-            let proxy = port.map { "\($0 == 10808 ? "INCY" : "Happ") · 127.0.0.1:\($0)" } ?? "не обнаружен"
+            let proxy = port.map { "\($0 == 10808 ? "INCY" : "Happ") · 127.0.0.1:\($0)" } ?? L("not detected")
             let route = self.readRouteStatus(status)
             DispatchQueue.main.async {
                 if self.stateRevision != revision {
@@ -390,26 +390,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 if status.exitNodeStatus?.ID != nil {
                     let online = status.exitNodeStatus?.Online ?? true
                     base = matrixIcon(.exitNode(online: online))
-                    description = online ? "Tailscale: connected, exit node active" : "Tailscale: exit node unreachable"
+                    description = online ? L("Tailscale: connected, exit node active") : L("Tailscale: exit node unreachable")
                 } else {
                     base = matrixIcon(.connected)
-                    description = "Tailscale: connected"
+                    description = L("Tailscale: connected")
                 }
                 stopAnimating()
             case "Starting":
                 startAnimatingIfNeeded()
                 base = matrixIcon(.wave(frame: animationFrame))
-                description = "Tailscale: connecting…"
+                description = L("Tailscale: connecting…")
             default:
                 // Stopped, NeedsLogin, NoState, ...: all shown as disconnected;
                 // the tooltip and menu say which.
                 base = matrixIcon(.dim)
-                description = state == "NeedsLogin" ? "Tailscale: needs login" : "Tailscale: disconnected"
+                description = state == "NeedsLogin" ? L("Tailscale: needs login") : L("Tailscale: disconnected")
                 stopAnimating()
             }
         } else {
             base = matrixIcon(.dim)
-            description = "Tailscale: unknown"
+            description = L("Tailscale: unknown")
             stopAnimating()
         }
 
@@ -418,7 +418,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // we're otherwise Running but something's actually wrong (e.g. a
         // relay is unreachable).
         if status?.backendState == "Running", let health = status?.health, !health.isEmpty {
-            description += " — \(health.count) health warning\(health.count == 1 ? "" : "s")"
+            description += " — " + (health.count == 1 ? L(format: "%ld health warning", health.count) : L(format: "%ld health warnings", health.count))
             base = matrixIcon(.warning)
         }
 
@@ -444,7 +444,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let button = statusItem.button else { return }
         let icon = matrixIcon(.wave(frame: animationFrame))
         icon.isTemplate = true
-        icon.accessibilityDescription = "Tailscale: connecting…"
+        icon.accessibilityDescription = L("Tailscale: connecting…")
         button.image = icon
     }
 
@@ -473,7 +473,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.delegate = self
         let state = currentPrefs?.LoggedOut == true ? "NeedsLogin" : (status?.backendState ?? "Unknown")
         let busy = loginInProgress || commandInProgress
-        let title = busy ? "Updating…" : (["Running": "Connected", "Stopped": "Disconnected", "Starting": "Connecting…", "NeedsLogin": "Needs login"][state] ?? state)
+        let title = busy ? L("Updating…") : (["Running": L("Connected"), "Stopped": L("Disconnected"), "Starting": L("Connecting…"), "NeedsLogin": L("Needs login"), "Unknown": L("Unknown")][state] ?? state)
         let header = NSMenuItem()
         header.view = MenuConnectionHeader(state: title, connected: state == "Running",
             enabled: !busy && ["Running", "Stopped", "NeedsLogin"].contains(state)) { [weak self, weak menu] in
@@ -485,10 +485,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(header)
         menu.addItem(.separator())
 
-        let accountName = currentProfiles.first(where: { $0.selected })?.account ?? status?.currentTailnet?.Name ?? "Account"
+        let accountName = currentProfiles.first(where: { $0.selected })?.account ?? status?.currentTailnet?.Name ?? L("Account")
         let account = NSMenuItem(title: accountName, action: nil, keyEquivalent: "")
         let accountTitle = NSMutableAttributedString(string: accountName + "\n", attributes: [.font: NSFont.systemFont(ofSize: 14, weight: .medium)])
-        accountTitle.append(NSAttributedString(string: status?.currentTailnet?.Name ?? "Account", attributes: [.font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.secondaryLabelColor]))
+        accountTitle.append(NSAttributedString(string: status?.currentTailnet?.Name ?? L("Account"), attributes: [.font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.secondaryLabelColor]))
         account.attributedTitle = accountTitle
         account.image = NSImage(size: NSSize(width: 32, height: 32), flipped: false) { rect in
             NSColor(white: 0.16, alpha: 1).setFill()
@@ -500,14 +500,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
 
         if let me = status?.selfNode, let ip = me.TailscaleIPs?.first {
-            let name = displayName(dnsName: me.DNSName, fallback: "This Mac")
-            let device = NSMenuItem(title: "This Device: \(name) (\(ip))", action: #selector(copyToClipboard(_:)), keyEquivalent: "")
+            let name = displayName(dnsName: me.DNSName, fallback: L("This Mac"))
+            let device = NSMenuItem(title: L(format: "This Device: %@ (%@)", name, ip), action: #selector(copyToClipboard(_:)), keyEquivalent: "")
             device.target = self
             device.representedObject = ip
-            device.toolTip = "Copy this device's Tailscale address"
+            device.toolTip = L("Copy this device's Tailscale address")
             menu.addItem(device)
         }
-        let network = NSMenuItem(title: "Network Devices", action: nil, keyEquivalent: "")
+        let network = NSMenuItem(title: L("Network Devices"), action: nil, keyEquivalent: "")
         let devices = NSMenu()
         let peers = status?.peer?.values.sorted {
             displayName(dnsName: $0.DNSName, fallback: $0.HostName ?? "") <
@@ -519,7 +519,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(network)
         menu.addItem(.separator())
 
-        let exit = NSMenuItem(title: "Exit Nodes", action: nil, keyEquivalent: "")
+        let exit = NSMenuItem(title: L("Exit Nodes"), action: nil, keyEquivalent: "")
         exit.submenu = buildExitNodeMenu(status: status)
         exit.isEnabled = state == "Running" && !busy
         menu.addItem(exit)
@@ -527,28 +527,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let warning = NSMenuItem(title: networkHealth.line, action: #selector(repairNetwork(_:)), keyEquivalent: "")
             warning.target = self
             warning.isEnabled = !busy && pendingReconnect == nil
-            warning.toolTip = "Click to repair: stop Tailscale, restart Wi-Fi, reconnect"
+            warning.toolTip = L("Click to repair: stop Tailscale, restart Wi-Fi, reconnect")
             menu.addItem(warning)
         }
         if repairingNetwork {
-            let repairing = NSMenuItem(title: "Repairing network…", action: nil, keyEquivalent: "")
+            let repairing = NSMenuItem(title: L("Repairing network…"), action: nil, keyEquivalent: "")
             repairing.isEnabled = false
             menu.addItem(repairing)
         } else if pendingReconnect != nil {
-            let title = waitingForUplink ? "Tailscale reconnects when Wi-Fi is back" : "Reconnecting Tailscale…"
+            let title = waitingForUplink ? L("Tailscale reconnects when Wi-Fi is back") : L("Reconnecting Tailscale…")
             let waiting = NSMenuItem(title: title, action: nil, keyEquivalent: "")
             waiting.isEnabled = false
             menu.addItem(waiting)
         } else {
-            let reconnect = NSMenuItem(title: "Reconnect Tailscale", action: #selector(reconnectTailscale(_:)), keyEquivalent: "")
+            let reconnect = NSMenuItem(title: L("Reconnect Tailscale"), action: #selector(reconnectTailscale(_:)), keyEquivalent: "")
             reconnect.target = self
             reconnect.isEnabled = state == "Running" && !busy
-            reconnect.toolTip = "Disconnect, wait for the network and INCY / Happ, then connect again"
+            reconnect.toolTip = L("Disconnect, wait for the network and INCY / Happ, then connect again")
             menu.addItem(reconnect)
-            let repair = NSMenuItem(title: "Repair Network", action: #selector(repairNetwork(_:)), keyEquivalent: "")
+            let repair = NSMenuItem(title: L("Repair Network"), action: #selector(repairNetwork(_:)), keyEquivalent: "")
             repair.target = self
             repair.isEnabled = !busy
-            repair.toolTip = "Stop Tailscale, restart Wi-Fi, wait for INCY / Happ, then restore Tailscale"
+            repair.toolTip = L("Stop Tailscale, restart Wi-Fi, wait for INCY / Happ, then restore Tailscale")
             menu.addItem(repair)
         }
         menu.addItem(.separator())
@@ -557,16 +557,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         transport.toolTip = clientTransport.explanation
         menu.addItem(transport)
         menu.addItem(.separator())
-        let settings = NSMenuItem(title: "Settings…", action: #selector(showSettingsWindow(_:)), keyEquivalent: ",")
+        let settings = NSMenuItem(title: L("Settings…"), action: #selector(showSettingsWindow(_:)), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
-        let open = NSMenuItem(title: "Open Tailbar", action: #selector(showDashboard(_:)), keyEquivalent: "")
+        let open = NSMenuItem(title: L("Open Tailbar"), action: #selector(showDashboard(_:)), keyEquivalent: "")
         open.target = self
         menu.addItem(open)
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit", action: #selector(quitApp(_:)), keyEquivalent: "q")
+        let quit = NSMenuItem(title: L("Quit"), action: #selector(quitApp(_:)), keyEquivalent: "q")
         quit.target = self
-        quit.toolTip = "Quit the interface; VPN stays active"
+        quit.toolTip = L("Quit the interface; VPN stays active")
         menu.addItem(quit)
         statusItem.menu = menu
     }
@@ -574,10 +574,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func buildAccountMenu() -> NSMenu {
         let menu = buildSwitchAccountMenu()
         menu.addItem(.separator())
-        let admin = NSMenuItem(title: "Admin console…", action: #selector(openAdminConsole), keyEquivalent: "")
+        let admin = NSMenuItem(title: L("Admin console…"), action: #selector(openAdminConsole), keyEquivalent: "")
         admin.target = self
         menu.addItem(admin)
-        let logout = NSMenuItem(title: "Log out", action: #selector(logOut), keyEquivalent: "")
+        let logout = NSMenuItem(title: L("Log out"), action: #selector(logOut), keyEquivalent: "")
         logout.target = self
         menu.addItem(logout)
         return menu
@@ -586,7 +586,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func buildSwitchAccountMenu() -> NSMenu {
         let submenu = NSMenu()
         if currentProfiles.isEmpty {
-            let item = NSMenuItem(title: "(unavailable)", action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: L("(unavailable)"), action: nil, keyEquivalent: "")
             item.isEnabled = false
             submenu.addItem(item)
             return submenu
@@ -605,7 +605,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let submenu = NSMenu()
         let activeID = status?.exitNodeStatus?.ID
 
-        let noneItem = NSMenuItem(title: "None", action: #selector(selectExitNode(_:)), keyEquivalent: "")
+        let noneItem = NSMenuItem(title: L("None"), action: #selector(selectExitNode(_:)), keyEquivalent: "")
         noneItem.target = self
         noneItem.representedObject = ""
         noneItem.state = (activeID == nil) ? .on : .off
@@ -618,7 +618,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if !candidates.isEmpty {
             submenu.addItem(NSMenuItem.separator())
             for peer in candidates {
-                let name = displayName(dnsName: peer.DNSName, fallback: peer.HostName ?? "unknown")
+                let name = displayName(dnsName: peer.DNSName, fallback: peer.HostName ?? L("unknown"))
                 let item = NSMenuItem(title: name, action: #selector(selectExitNode(_:)), keyEquivalent: "")
                 item.target = self
                 item.representedObject = peer.TailscaleIPs?.first ?? ""
@@ -629,61 +629,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         submenu.addItem(NSMenuItem.separator())
 
-        let allowLAN = NSMenuItem(title: "Allow local network access", action: #selector(toggleAllowLAN(_:)), keyEquivalent: "")
+        let allowLAN = NSMenuItem(title: L("Allow local network access"), action: #selector(toggleAllowLAN(_:)), keyEquivalent: "")
         allowLAN.target = self
         allowLAN.state = (currentPrefs?.ExitNodeAllowLANAccess == true) ? .on : .off
         submenu.addItem(allowLAN)
 
-        let advertise = NSMenuItem(title: "Run this device as exit node", action: #selector(toggleAdvertiseExitNode(_:)), keyEquivalent: "")
+        let advertise = NSMenuItem(title: L("Run this device as exit node"), action: #selector(toggleAdvertiseExitNode(_:)), keyEquivalent: "")
         advertise.target = self
         advertise.state = (currentPrefs?.AdvertiseRoutes?.contains("0.0.0.0/0") == true) ? .on : .off
         submenu.addItem(advertise)
 
         return submenu
-    }
-
-    func buildPreferencesMenu() -> NSMenu {
-        let submenu = NSMenu()
-
-        let acceptRoutes = NSMenuItem(title: "Use Tailscale subnets", action: #selector(togglePref(_:)), keyEquivalent: "")
-        acceptRoutes.target = self
-        acceptRoutes.representedObject = "accept-routes"
-        acceptRoutes.state = (currentPrefs?.RouteAll == true) ? .on : .off
-        submenu.addItem(acceptRoutes)
-
-        let acceptDNS = NSMenuItem(title: "Use Tailscale DNS", action: #selector(togglePref(_:)), keyEquivalent: "")
-        acceptDNS.target = self
-        acceptDNS.representedObject = "accept-dns"
-        acceptDNS.state = (currentPrefs?.CorpDNS == true) ? .on : .off
-        submenu.addItem(acceptDNS)
-
-        let allowIncoming = NSMenuItem(title: "Allow incoming connections", action: #selector(togglePref(_:)), keyEquivalent: "")
-        allowIncoming.target = self
-        allowIncoming.representedObject = "allow-incoming"
-        allowIncoming.state = (currentPrefs?.ShieldsUp == false) ? .on : .off
-        submenu.addItem(allowIncoming)
-
-        submenu.addItem(NSMenuItem.separator())
-
-        let launchAtLogin = NSMenuItem(title: "Launch at login", action: #selector(toggleLaunchAtLogin(_:)), keyEquivalent: "")
-        launchAtLogin.target = self
-        launchAtLogin.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
-        submenu.addItem(launchAtLogin)
-
-        submenu.addItem(NSMenuItem.separator())
-
-        let happItem = NSMenuItem(title: "Local proxy: \(proxyStatus)", action: nil, keyEquivalent: "")
-        happItem.isEnabled = false
-        submenu.addItem(happItem)
-
-        return submenu
-    }
-
-    func happProxyStatusText() -> String {
-        for port in [10808, 10809, 10820] where isPortOpen(port) {
-            return "detected on :\(port)"
-        }
-        return "not detected (direct)"
     }
 
     func isPortOpen(_ port: Int) -> Bool {
@@ -696,7 +652,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func peerMenuItem(_ peer: TSPeer) -> NSMenuItem {
-        let name = displayName(dnsName: peer.DNSName, fallback: peer.HostName ?? "unknown")
+        let name = displayName(dnsName: peer.DNSName, fallback: peer.HostName ?? L("unknown"))
         let online = peer.Online == true
         let dot = online ? "●" : "○"
         let osTag = peer.OS.map { " [\($0)]" } ?? ""
@@ -705,7 +661,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let submenu = NSMenu()
 
-        let statusLine = NSMenuItem(title: online ? "Online" : relativeLastSeen(peer.LastSeen), action: nil, keyEquivalent: "")
+        let statusLine = NSMenuItem(title: online ? L("Online") : relativeLastSeen(peer.LastSeen), action: nil, keyEquivalent: "")
         statusLine.isEnabled = false
         submenu.addItem(statusLine)
 
@@ -716,7 +672,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         if let relay = peer.Relay, !relay.isEmpty {
-            let relayItem = NSMenuItem(title: "Relay: \(relay)", action: nil, keyEquivalent: "")
+            let relayItem = NSMenuItem(title: L(format: "Relay: %@", relay), action: nil, keyEquivalent: "")
             relayItem.isEnabled = false
             submenu.addItem(relayItem)
         }
@@ -730,29 +686,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         submenu.addItem(NSMenuItem.separator())
 
         if let ip = peer.TailscaleIPs?.first {
-            let copyIP = NSMenuItem(title: "Copy IP", action: #selector(copyToClipboard(_:)), keyEquivalent: "")
+            let copyIP = NSMenuItem(title: L("Copy IP"), action: #selector(copyToClipboard(_:)), keyEquivalent: "")
             copyIP.target = self
             copyIP.representedObject = ip
             submenu.addItem(copyIP)
 
-            let pingItem = NSMenuItem(title: "Ping", action: #selector(pingPeer(_:)), keyEquivalent: "")
+            let pingItem = NSMenuItem(title: L("Ping"), action: #selector(pingPeer(_:)), keyEquivalent: "")
             pingItem.target = self
             pingItem.representedObject = ip
             submenu.addItem(pingItem)
 
-            let openItem = NSMenuItem(title: "Open in browser", action: #selector(openInBrowser(_:)), keyEquivalent: "")
+            let openItem = NSMenuItem(title: L("Open in browser"), action: #selector(openInBrowser(_:)), keyEquivalent: "")
             openItem.target = self
             openItem.representedObject = ip
             submenu.addItem(openItem)
 
-            let sendFileItem = NSMenuItem(title: "Send file…", action: #selector(sendFileToPeer(_:)), keyEquivalent: "")
+            let sendFileItem = NSMenuItem(title: L("Send file…"), action: #selector(sendFileToPeer(_:)), keyEquivalent: "")
             sendFileItem.target = self
             sendFileItem.representedObject = ip
             submenu.addItem(sendFileItem)
         }
 
         if let dnsName = peer.DNSName, !dnsName.isEmpty {
-            let copyDNS = NSMenuItem(title: "Copy DNS name", action: #selector(copyToClipboard(_:)), keyEquivalent: "")
+            let copyDNS = NSMenuItem(title: L("Copy DNS name"), action: #selector(copyToClipboard(_:)), keyEquivalent: "")
             copyDNS.target = self
             copyDNS.representedObject = dnsName.hasSuffix(".") ? String(dnsName.dropLast()) : dnsName
             submenu.addItem(copyDNS)
@@ -787,7 +743,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // Shared by the Connect toggle and the explicit Log in… item. Guards
+    // Shared by the Connect toggles, which also sign in when needed. Guards
     // against firing a second `tailscale up --reset` while one is already
     // in flight: each `up` call cancels any previous one still waiting on
     // browser auth (surfaces as "context canceled" / a fresh AuthURL each
@@ -821,7 +777,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // bare "up" fails with "requires mentioning all non-default
             // flags" whenever persisted prefs (accept-routes, exit-node
             // LAN access, ...) differ from tailscale's own defaults —
-            // which they usually do, since Preferences/exit-node menu
+            // which they usually do, since Settings and the exit-node menu
             // set them via `tailscale set`. --reset sidesteps that instead
             // of silently failing, but it also resets those prefs to
             // tailscale's own defaults (accept-routes off, accept-dns on,
@@ -829,7 +785,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // every Connect/Log in doesn't quietly drop subnet routing etc.
             let (output, code) = runTailscale(["up", "--reset"])
             if code != 0 {
-                let hint = detectedPort == nil ? "\n\nПопытка без локального прокси не удалась. Если сеть блокирует Tailscale, запустите INCY или Happ и повторите подключение." : ""
+                let hint = detectedPort == nil ? "\n\n" + L("Connecting without a local proxy failed. If your network blocks Tailscale, start INCY or Happ and connect again.") : ""
                 DispatchQueue.main.async { self.showConnectError(output + hint) }
             } else {
                 restorePrefsAfterReset(prefsBefore, exitNodeTarget: exitNodeTargetBefore)
@@ -843,8 +799,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func showConnectError(_ output: String) {
         let alert = NSAlert()
-        alert.messageText = "Couldn't connect"
-        alert.informativeText = output.isEmpty ? "tailscale up failed with no output." : output
+        alert.messageText = L("Couldn't connect")
+        alert.informativeText = output.isEmpty ? L("tailscale up failed with no output.") : output
         alert.alertStyle = .warning
         alert.runModal()
     }
@@ -878,10 +834,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func logOut(_ sender: NSMenuItem) {
         let alert = NSAlert()
-        alert.messageText = "Log out of Tailscale?"
-        alert.informativeText = "This disconnects and invalidates this device's key. You'll need to re-authenticate to reconnect."
-        alert.addButton(withTitle: "Log Out")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = L("Log out of Tailscale?")
+        alert.informativeText = L("This disconnects and invalidates this device's key. You'll need to re-authenticate to reconnect.")
+        alert.addButton(withTitle: L("Log Out"))
+        alert.addButton(withTitle: L("Cancel"))
         alert.alertStyle = .warning
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         DispatchQueue.global(qos: .userInitiated).async {
@@ -889,15 +845,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             DispatchQueue.main.async {
                 self.loginInProgress = false
                 if code != 0 {
-                    self.showConnectError(output.isEmpty ? "tailscale logout failed (exit code \(code))." : output)
+                    self.showConnectError(output.isEmpty ? L(format: "tailscale logout failed (exit code %d).", code) : output)
                 }
                 self.refresh()
             }
         }
-    }
-
-    @objc func logIn(_ sender: NSMenuItem) {
-        startConnectOrLogin()
     }
 
     @objc func copyToClipboard(_ sender: NSMenuItem) {
@@ -949,34 +901,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // The watchdog daemon repairs a missing default route within ~5s (the
-    // known exit-node-teardown bug), but the app can surface it immediately
-    // instead of leaving the user staring at a silently broken connection.
-    func verifyRouteAfterExitNodeChange() {
-        Thread.sleep(forTimeInterval: 1.5)
-        let hasRoute = checkDefaultRouteExists()
-        if !hasRoute {
-            postNotification(title: "Repairing network route", body: "Default route was dropped after the exit-node change — the watchdog is restoring it.")
-        }
-    }
-
-    func checkDefaultRouteExists() -> Bool {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/netstat")
-        process.arguments = ["-rn", "-f", "inet"]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        do {
-            try process.run()
-        } catch {
-            return true
-        }
-        process.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output = String(data: data, encoding: .utf8) ?? ""
-        return output.split(separator: "\n").contains { $0.split(whereSeparator: { $0.isWhitespace }).first == "default" }
-    }
-
     @objc func togglePref(_ sender: NSMenuItem) {
         guard let key = sender.representedObject as? String else { return }
         let prefs = currentPrefs
@@ -1012,28 +936,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         refresh()
     }
 
-    @objc func showHealthWarnings(_ sender: NSMenuItem) {
-        guard let text = sender.representedObject as? String else { return }
-        let alert = NSAlert()
-        alert.messageText = "Tailscale health warnings"
-        alert.informativeText = text
-        alert.alertStyle = .warning
-        alert.runModal()
-    }
-
     @objc func sendFileToPeer(_ sender: NSMenuItem) {
         guard let target = sender.representedObject as? String else { return }
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.title = "Send file via Taildrop"
+        panel.title = L("Send file via Taildrop")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         DispatchQueue.global(qos: .userInitiated).async {
             let (output, code) = runTailscale(["file", "cp", url.path, "\(target):"])
             DispatchQueue.main.async {
                 let alert = NSAlert()
-                alert.messageText = code == 0 ? "File sent" : "Send failed"
+                alert.messageText = code == 0 ? L("File sent") : L("Send failed")
                 alert.informativeText = output.isEmpty ? "\(url.lastPathComponent) → \(target)" : output
                 alert.alertStyle = code == 0 ? .informational : .warning
                 alert.runModal()
@@ -1055,19 +970,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         if let prev = previousBackendState, let new = newBackendState, prev != new {
             if new == "Running" {
-                postNotification(title: "Tailscale connected", body: nil)
+                postNotification(title: L("Tailscale connected"), body: nil)
             } else if prev == "Running" {
-                postNotification(title: "Tailscale disconnected", body: "State: \(new)")
+                postNotification(title: L("Tailscale disconnected"), body: L(format: "State: %@", new))
             }
         }
 
         if previousBackendState != nil, previousExitNodeID != newExitID {
             if let id = newExitID {
                 let name = newStatus?.peer?.values.first(where: { $0.ID == id })
-                    .map { displayName(dnsName: $0.DNSName, fallback: $0.HostName ?? "unknown") } ?? "unknown"
-                postNotification(title: "Exit node enabled", body: name)
+                    .map { displayName(dnsName: $0.DNSName, fallback: $0.HostName ?? L("unknown")) } ?? L("unknown")
+                postNotification(title: L("Exit node enabled"), body: name)
             } else if previousExitNodeID != nil {
-                postNotification(title: "Exit node disabled", body: nil)
+                postNotification(title: L("Exit node disabled"), body: nil)
             }
         }
 
@@ -1089,8 +1004,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let (output, _) = runTailscale(["ping", "-c", "3", ip])
             DispatchQueue.main.async {
                 let alert = NSAlert()
-                alert.messageText = "Ping \(ip)"
-                alert.informativeText = output.isEmpty ? "No output" : output
+                alert.messageText = L(format: "Ping %@", ip)
+                alert.informativeText = output.isEmpty ? L("No output") : output
                 alert.alertStyle = .informational
                 alert.runModal()
             }
